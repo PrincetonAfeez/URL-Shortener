@@ -20,17 +20,34 @@ the higher-level framework form of the same request/response idea.
 
 ## Quick Start
 
+**Contributors / full test run** (pinned dev toolchain):
+
 ```powershell
-python -m pip install -e .[dev] -c requirements-lock.txt
+python -m pip install -r requirements.txt
+python -m pip install -e ".[dev]" -c requirements-lock.txt
+```
+
+**Runtime only** (CLI + engine, no dev tools):
+
+```powershell
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+Then:
+
+```powershell
 sniplink init-db
 sniplink create https://example.com
 sniplink list
 sniplink serve-raw --port 9000
 ```
 
-`requirements-lock.txt` pins the dev environment so a fresh clone installs
-the exact set the test suite was verified against. Drop the `-c` flag to use
-the looser ranges from `pyproject.toml`.
+| File | Purpose |
+| ---- | ------- |
+| `requirements.txt` | Runtime deps (`django`); loose ranges matching `pyproject.toml` |
+| `requirements-lock.txt` | Pinned versions for reproducible dev/CI installs (`-c` constraints) |
+| `pyproject.toml` | Package metadata, pytest/coverage/ruff/mypy config |
 
 In another terminal:
 
@@ -39,6 +56,16 @@ curl -v http://localhost:9000/1
 ```
 
 ## Django Web UI
+
+If you already ran **Quick Start** (`sniplink init-db`) on the default
+`sniplink.db`, use `--fake-initial` so Django adopts the existing tables:
+
+```powershell
+python web/manage.py migrate --fake-initial
+python web/manage.py runserver 127.0.0.1:8000
+```
+
+Greenfield Django-first setup (no prior `init-db`):
 
 ```powershell
 python web/manage.py migrate
@@ -58,6 +85,14 @@ Django. Both adapters read and write the **same tables** (`links`, `clicks`,
 | `sniplink init-db` | `python web/manage.py migrate --fake-initial` |
 
 Migration `0002` reconciles legacy `links_*` shadow tables from older checkouts.
+Migration `0003` renames Django index names for CLI-first bootstrap.
+Migration `0004` aligns composite click indexes and drops redundant `short_code` indexes.
+Migration `0005` normalizes `metadata` for CLI-first shared databases.
+
+### API lifecycle semantics
+
+- `POST /api/links/{code}/disable` — **strict**: a second call on an already-disabled link returns `410 Gone`.
+- `DELETE /api/links/{code}` — **idempotent**: repeat delete returns `204 No Content`.
 
 ## JSON API
 
@@ -104,6 +139,7 @@ The CLI exits with one of the following codes — scripts can branch on them:
 | 4    | Short code not found                                                     |
 | 5    | Short code is gone (expired, disabled, or soft-deleted)                  |
 | 6    | Alias conflict (a vanity alias was already taken)                        |
+| 7    | Code-assignment retry budget exhausted (`CollisionExhausted`)          |
 
 Defined in `src/sniplink/cli/exit_codes.py` and raised in `cli/main.py`.
 
@@ -122,7 +158,15 @@ Override any field at runtime with the matching environment variable:
 | `sniplink.default_base_url`              | `SNIPLINK_BASE_URL`           |
 | `sniplink.default_redirect_status`       | `SNIPLINK_REDIRECT_STATUS`    |
 | `sniplink.collision_retry_limit`         | `SNIPLINK_COLLISION_RETRIES`  |
+| `sniplink.reserved_codes`                | _(TOML only; legacy `reserved_prefixes` accepted)_ |
+| `sniplink.base_aliases`                  | _(TOML only)_                 |
+| `sniplink.random_token_length`           | _(TOML only)_                 |
+| `sniplink.max_destination_length`        | _(TOML only)_                 |
+| `sniplink.max_request_path_bytes`        | _(TOML only)_                 |
+| `sniplink.raw_http_recv_timeout`         | _(TOML only)_                 |
+| `sniplink.logging.redact_keys`           | _(TOML only)_                 |
 | `sniplink.api.max_body_bytes`            | `SNIPLINK_API_MAX_BODY_BYTES` |
+| _(Django test DB override)_               | `SNIPLINK_DJANGO_DB`          |
 | `sniplink.logging.level`                 | `SNIPLINK_LOG_LEVEL`          |
 | `sniplink.logging.format`                | `SNIPLINK_LOG_FORMAT`         |
 | _(optional API auth)_                    | `SNIPLINK_API_KEY`            |
@@ -146,31 +190,39 @@ Override any field at runtime with the matching environment variable:
 
 ## Reserved Short Codes
 
-The redirect path refuses to assign or look up codes that match the reserved
-prefix list in `sniplink.toml` (default: `api`, `admin`, `dashboard`, `static`,
-`favicon.ico`). This stops a vanity alias from shadowing the JSON API or
-dashboard route.
+The engine blocks **exact** short codes listed in `sniplink.toml#reserved_codes`
+(default: `api`, `admin`, `dashboard`, `static`, `favicon.ico`, `links`).
+The list applies to vanity aliases **and** auto-generated Base62/random codes.
+Codes like `api-v2` are allowed. The legacy TOML key `reserved_prefixes` is
+still accepted. Sequential Base62 ids are enumerable — see ADR 0002.
 
 ## Tests
 
 ```powershell
+$env:PYTHONPATH="src;web"   # Linux/macOS: export PYTHONPATH=src:web
 python -m pytest
 ```
 
-Coverage targets:
+The suite has **253 tests** (unit, integration, concurrency, Django). Coverage
+is collected on the `sniplink` package with branch tracking; CI enforces a
+**95%** aggregate floor (`--cov-fail-under=95` in `pyproject.toml`). Current
+instrumented coverage is **~98%** — core, CLI, async health checker, and WSGI
+modules are fully covered; Django views are tested under `tests/integration/django/`
+but live outside `--cov=sniplink`.
 
-- `sniplink.core`: aim for **≥ 85%** (framework-free engine, easiest to test).
-- Everything else: **≥ 70%**.
-- The aggregate floor enforced by `pyproject.toml` is **60%** today and grows
-  toward 80% as milestones 4–9 land — see `docs/planning/timeline.md`.
+Install dev deps before running locally:
+
+```powershell
+python -m pip install -e ".[dev]" -c requirements-lock.txt
+```
 
 `pytest-asyncio` is in the `dev` extras and is required for the
 `asyncio_mode = "auto"` pytest setting. Without it, the suite still runs but
 emits an "Unknown config option" warning (suppressed via `filterwarnings`).
 
-The concurrency tests use SQLite WAL plus `BEGIN IMMEDIATE` so two threads
-actually race for the `UNIQUE(short_code)` constraint instead of being silently
-serialized by the default writer lock. See ADR 0004.
+Concurrency tests fan multiple threads against a shared SQLite file in WAL
+mode; the `UNIQUE(short_code)` constraint decides who wins a same-alias race.
+See ADR 0004 and `tests/conftest.py`.
 
 ## Design Choices Worth Calling Out
 
@@ -202,6 +254,14 @@ link-local destinations unless `--allow-private` is passed for local testing.
 The `observability.redaction` module strips `Authorization`, API-key, and
 secret-shaped header values out of logs.
 
+## Known limitations
+
+- **Enumerable Base62 codes** — sequential ids produce guessable short codes (`/1`, `/2`); use `--random` or vanity aliases when that matters (ADR 0002).
+- **Dev defaults** — `DEBUG=true` and a static `SECRET_KEY` in `settings.py`; set `SNIPLINK_DJANGO_DEBUG=false` and `SNIPLINK_SECRET_KEY` for non-local runs (see `docs/security.md`).
+- **Single-file SQLite** — not HA; production would use Postgres behind the same `Storage` contract.
+- **HTMX stats vs API stats** — when `SNIPLINK_API_KEY` is set, direct browser access to `/links/{code}/stats` requires the key; dashboard HTMX stats remain same-origin.
+- **JSON metadata on CLI-first DBs** — migration `0005` normalizes rows; full `JSON_VALID` enforcement applies on greenfield `schema.sql` bootstrap.
+
 ## Implementation Caveats (worth knowing during the defense)
 
 - **`wsgiref.simple_server`** powers `sniplink serve-wsgi`. It is single-
@@ -223,8 +283,28 @@ secret-shaped header values out of logs.
 
 ## Documentation
 
+- [Architecture overview](docs/architecture.md)
+- [Defense FAQ](docs/defense-faq.md)
+- [Security & privacy](docs/security.md)
+- [Submission checklist](docs/submission-checklist.md)
 - [Protocol evidence](docs/protocol-evidence.md)
 - [Demo script](docs/demo-script.md)
 - [Production reflection](docs/production-reflection.md)
 - [Milestone timeline](docs/planning/timeline.md)
 - Architecture decision records live in [docs/adr](docs/adr).
+
+## Cross-platform notes
+
+Commands above use PowerShell line continuation (backtick). On Linux/macOS use
+`\` instead, or single-line commands. Set `PYTHONPATH=src:web` when running
+pytest outside Windows.
+
+## Submission
+
+Tag the hand-in commit:
+
+```powershell
+git tag -a v1.0-capstone -m "Capstone submission"
+```
+
+Smoke-run `docs/submission-checklist.md` before submitting.
