@@ -1,0 +1,13 @@
+# Runtime dependencies for sniplink.
+#
+# Minimal install (CLI + core engine only needs the editable package):
+#     pip install -e .
+#
+# With Django dashboard / JSON API:
+#     pip install -r requirements.txt
+#     pip install -e .
+#
+# Dev + test toolchain (pinned, reproducible):
+#     pip install -e ".[dev]" -c requirements-lock.txt
+
+django>=5.0,<6.0
