@@ -114,14 +114,12 @@ addopts = [
     "--strict-config",
     "--cov=sniplink",
     "--cov-report=term-missing",
-    # The portfolio target is 80% (with core >= 85%). The gate is held at
-    # 60% while milestones 4-9 are still landing — see docs/planning/
-    # timeline.md. Raise this as new tests come online.
-    "--cov-fail-under=70",
+    # Portfolio target: 95% aggregate after comprehensive test pass.
+    "--cov-fail-under=95",
 ]
 asyncio_mode = "auto"
 # DJANGO_SETTINGS_MODULE is intentionally NOT set here. The Django integration
-# test (tests/integration/test_django_api.py) bootstraps Django on its own so
+# test (tests/integration/django/test_api_basic.py) bootstraps Django on its own so
 # pytest-django can stay an optional dev dep. Setting it project-wide makes
 # pytest-django take over DB management and reject the manual migrate fixture
 # the test uses.
@@ -147,11 +145,10 @@ markers = [
 ]
 
 # --------------------------------------------------------------------
-# Coverage targets:
-#   * sniplink.core: aim for >= 85%
-#   * everything else: >= 70%
-# The 80% gate above is the aggregate floor; per-package thresholds are
-# enforced via the coverage report and the README rubric.
+# Coverage: branch-aware report on the sniplink package. The 95% gate in
+# addopts is the CI floor. CLI modules are included (direct unit tests +
+# subprocess integration tests). Django views live under web/ and are
+# exercised by tests/integration/django/ but are not in --cov=sniplink.
 # --------------------------------------------------------------------
 [tool.coverage.run]
 branch = true
