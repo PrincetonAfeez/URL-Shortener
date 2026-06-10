@@ -1,0 +1,9 @@
+"""Exit codes for the CLI."""
+
+SUCCESS = 0
+USAGE_ERROR = 2
+NOT_FOUND = 4
+GONE = 5
+CONFLICT = 6
+EXHAUSTED = 7
+FAILURE = 1
