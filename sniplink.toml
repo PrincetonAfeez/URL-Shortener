@@ -1,0 +1,41 @@
+# sniplink configuration.
+#
+# This file is the single source of truth for engine behavior. Both the CLI
+# (via sniplink.config.load_config) and the Django app (via
+# sniplink_web.settings) read from here, so the two front ends never disagree
+# about the database path, redirect defaults, or limits.
+#
+# Override any field at runtime with the SNIPLINK_* environment variables
+# documented in src/sniplink/config.py.
+
+[sniplink]
+# Shared SQLite file used by CLI / raw socket / WSGI / Django.
+# Keeping a single file means the dashboard and the CLI show the same links.
+database_path = "sniplink.db"
+default_base_url = "http://localhost:8000"
+default_redirect_status = 302
+random_token_length = 7
+collision_retry_limit = 8
+
+# Validation caps applied by core/validation.py and the raw HTTP parser.
+max_destination_length = 2048
+max_request_path_bytes = 2048
+
+# Exact short codes blocked on redirect and auto-assignment (not prefixes).
+# Legacy key ``reserved_prefixes`` is still accepted by load_config().
+reserved_codes = ["api", "admin", "dashboard", "static", "favicon.ico", "links"]
+
+[sniplink.api]
+# Maximum JSON body accepted by the API. Anything larger gets 413 Payload
+# Too Large. Keeps a careless curl from filling memory during the demo.
+max_body_bytes = 65536
+
+[sniplink.logging]
+# stdlib logging level (DEBUG / INFO / WARNING / ERROR).
+level = "INFO"
+# "json" emits structured one-line JSON records; "plain" keeps the
+# human-readable formatter for local hacking.
+format = "json"
+# Header / payload keys that get redacted by observability.redaction before
+# they reach the log sink.
+redact_keys = ["authorization", "x-api-key", "api_key", "secret"]
