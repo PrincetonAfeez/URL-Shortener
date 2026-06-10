@@ -1,0 +1,34 @@
+# sniplink — pinned dev environment for reproducible installs.
+#
+# Runtime:
+#     pip install -r requirements.txt -c requirements-lock.txt
+#     pip install -e . -c requirements-lock.txt
+#
+# Dev + test (recommended for contributors and CI):
+#     pip install -e ".[dev]" -c requirements-lock.txt
+#
+# The ranges in pyproject.toml / requirements.txt are the supported envelope;
+# this file pins the exact versions verified by the test suite (253 tests,
+# 97.9% coverage on the instrumented sniplink package). Regenerate after
+# upgrading any direct dependency, then re-run: python -m pytest
+
+# Direct runtime dependency (also listed in requirements.txt)
+django==5.2.14
+
+# Direct dev dependencies
+coverage==7.14.1
+mypy==2.1.0
+pytest==9.0.3
+pytest-asyncio==1.3.0
+pytest-cov==7.1.0
+pytest-django==4.12.0
+ruff==0.15.16
+
+# Optional Django stubs for strict mypy
+django-stubs==6.0.4
+django-stubs-ext==6.0.4
+
+# Direct transitives the dev workflow exercises
+asgiref==3.11.1
+mypy_extensions==1.1.0
+sqlparse==0.5.5
