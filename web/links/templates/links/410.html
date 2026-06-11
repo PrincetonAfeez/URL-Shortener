@@ -1,0 +1,15 @@
+{% extends "links/base.html" %}
+
+{% block content %}
+<section class="error-page">
+  <h2>410 Gone</h2>
+  <p>
+    The short code <code>{{ code }}</code> existed once but has been expired,
+    disabled, or deleted. It will not redirect again.
+  </p>
+  <p>
+    See <a href="{% url 'links:dashboard' %}">the dashboard</a> for the current
+    set of active links.
+  </p>
+</section>
+{% endblock %}

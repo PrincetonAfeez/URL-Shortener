@@ -1,0 +1,23 @@
+<h2>{{ stats.short_code }}</h2>
+<dl>
+  <div>
+    <dt>Destination</dt>
+    <dd>{{ stats.destination_url }}</dd>
+  </div>
+  <div>
+    <dt>Click count</dt>
+    <dd>{{ stats.click_count }}</dd>
+  </div>
+  <div>
+    <dt>Recorded clicks</dt>
+    <dd>{{ stats.recorded_clicks }}</dd>
+  </div>
+  <div>
+    <dt>Last click</dt>
+    <dd>{{ stats.last_clicked_at|default:"None" }}</dd>
+  </div>
+  <div>
+    <dt>Expires</dt>
+    <dd>{{ stats.expires_at|default:"None" }}</dd>
+  </div>
+</dl>

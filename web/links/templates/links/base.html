@@ -1,0 +1,28 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>sniplink</title>
+  <link rel="stylesheet" href="{% static 'links/styles.css' %}">
+  <script src="{% static 'links/htmx.min.js' %}" defer></script>
+  <script src="{% static 'links/app.js' %}" defer></script>
+</head>
+{# HTMX form posts send the Django CSRF token via X-CSRFToken on every
+   unsafe request (see ADR 0005). The matching middleware is
+   django.middleware.csrf.CsrfViewMiddleware in sniplink_web.settings. #}
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <header class="topbar">
+    <div>
+      <h1>sniplink</h1>
+      <p>Protocol-first URL shortening</p>
+    </div>
+    <a class="api-link" href="/api/links/missing">API</a>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

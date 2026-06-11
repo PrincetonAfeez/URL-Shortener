@@ -1,0 +1,12 @@
+{% extends "links/base.html" %}
+
+{% block content %}
+<section class="error-page">
+  <h2>404 Not Found</h2>
+  <p>The short code <code>{{ code }}</code> has never been registered.</p>
+  <p>
+    <a href="{% url 'links:dashboard' %}">Back to the dashboard</a>
+    to create a new link.
+  </p>
+</section>
+{% endblock %}

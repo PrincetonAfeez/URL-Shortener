@@ -1,0 +1,86 @@
+{% extends "links/base.html" %}
+{% load link_extras %}
+
+{% block content %}
+<section class="workspace">
+  <form class="create-form"
+        method="post"
+        hx-post="{% url 'links:dashboard' %}"
+        hx-target="#form-status"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+    <label>
+      Destination URL
+      <input name="url" type="url" placeholder="https://example.com" required>
+    </label>
+    <label>
+      Vanity alias
+      <input name="alias" type="text" placeholder="optional">
+    </label>
+    <label>
+      Code
+      <select name="strategy">
+        <option value="base62">Base62</option>
+        <option value="random">Random token</option>
+      </select>
+    </label>
+    <label>
+      Redirect
+      <select name="redirect_status">
+        <option value="302"{% if default_redirect_status == 302 %} selected{% endif %}>302 Found</option>
+        <option value="301"{% if default_redirect_status == 301 %} selected{% endif %}>301 Moved Permanently</option>
+        <option value="307"{% if default_redirect_status == 307 %} selected{% endif %}>307 Temporary Redirect</option>
+        <option value="308"{% if default_redirect_status == 308 %} selected{% endif %}>308 Permanent Redirect</option>
+      </select>
+    </label>
+    <label>
+      Expires at (optional, UTC ISO 8601)
+      <input name="expires_at" type="text" placeholder="2026-12-31T23:59:00">
+    </label>
+    <label>
+      Max clicks (optional)
+      <input name="max_clicks" type="number" min="1" placeholder="leave empty for unlimited">
+    </label>
+    <button type="submit">Create</button>
+    <div id="form-status" class="form-status">
+      {% if error %}<span class="error">{{ error }}</span>{% endif %}
+    </div>
+  </form>
+
+  <div class="content-grid">
+    <section class="table-panel">
+      <div class="panel-heading">
+        <h2>Links</h2>
+        <span id="link-count">{{ links|length }} total</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Destination</th>
+              <th>Status</th>
+              <th>Clicks</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody id="link-body">
+            {% for link in links %}
+              {% include "links/partials/link_row.html" with link=link short_url=short_urls|get_item:link.short_code only %}
+            {% empty %}
+              <tr id="empty-row" class="empty-row">
+                <td colspan="5">No links yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside id="stats-panel" class="stats-panel">
+      <h2>Stats</h2>
+      <p>Select a link row to load its current click count and lifecycle state.</p>
+    </aside>
+  </div>
+</section>
+{% endblock %}

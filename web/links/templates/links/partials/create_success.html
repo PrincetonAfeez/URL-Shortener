@@ -1,0 +1,10 @@
+<span class="success">Created {{ link.short_code }}</span>
+<span id="link-count" hx-swap-oob="true">{{ total }} total</span>
+<table class="oob-table">
+  <tbody hx-swap-oob="afterbegin:#link-body">
+    {% include "links/partials/link_row.html" with link=link short_url=short_url only %}
+  </tbody>
+  <tbody>
+    <tr id="empty-row" hx-swap-oob="delete"></tr>
+  </tbody>
+</table>

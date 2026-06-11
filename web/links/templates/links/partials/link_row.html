@@ -1,0 +1,47 @@
+{% load link_extras %}
+<tr id="row-{{ link.short_code }}"{% if oob %} hx-swap-oob="afterbegin:#link-body"{% endif %}>
+  <td>
+    <a class="code-link" href="{{ short_url }}">{{ link.short_code }}</a>
+    <button class="copy-button" type="button" data-copy="{{ short_url }}">Copy</button>
+  </td>
+  <td class="destination">
+    <a href="{{ link.destination_url }}">{{ link.destination_url }}</a>
+  </td>
+  <td>
+    {% if link|link_state == "deleted" %}
+      <span class="badge danger">Deleted</span>
+    {% elif link|link_state == "disabled" %}
+      <span class="badge warn">Disabled</span>
+    {% elif link|link_state == "expired" %}
+      <span class="badge warn">Expired</span>
+    {% elif link|link_state == "capped" %}
+      <span class="badge warn">Capped</span>
+    {% else %}
+      <span class="badge ok">Active</span>
+    {% endif %}
+    <span class="redirect-code">{{ link.redirect_status }}</span>
+  </td>
+  <td>{{ link.click_count }}</td>
+  <td class="actions">
+    {% if link|link_state == "active" %}
+    <button type="button"
+            hx-get="{% url 'links:stats_panel' link.short_code %}"
+            hx-target="#stats-panel"
+            hx-swap="innerHTML">Stats</button>
+    <form method="post"
+          hx-post="{% url 'links:disable' link.short_code %}"
+          hx-target="#row-{{ link.short_code }}"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit">Disable</button>
+    </form>
+    <form method="post"
+          hx-post="{% url 'links:delete' link.short_code %}"
+          hx-target="#row-{{ link.short_code }}"
+          hx-swap="delete">
+      {% csrf_token %}
+      <button class="danger-button" type="submit">Delete</button>
+    </form>
+    {% endif %}
+  </td>
+</tr>
