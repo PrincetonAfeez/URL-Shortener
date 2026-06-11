@@ -1,3 +1,5 @@
+"""Views for the links app. """
+
 from __future__ import annotations
 
 import json
