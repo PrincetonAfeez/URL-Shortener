@@ -140,11 +140,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     resolve = sub.add_parser("resolve", help="resolve a short code without counting a click")
     resolve.add_argument("code")
-    resolve.add_argument("--json", action="store_true")
+    resolve.add_argument(
+        "--json",
+        action="store_true",
+        help="print the resolved destination as JSON instead of plain text",
+    )
     resolve.set_defaults(func=cmd_resolve)
 
     list_cmd = sub.add_parser("list", help="list links")
-    list_cmd.add_argument("--include-deleted", action="store_true")
+    list_cmd.add_argument(
+        "--include-deleted",
+        action="store_true",
+        help="include soft-deleted links in the listing",
+    )
     list_cmd.set_defaults(func=cmd_list)
 
     stats = sub.add_parser("stats", help="show stats")
@@ -167,23 +175,60 @@ def build_parser() -> argparse.ArgumentParser:
     # default=None and resolve to "now" inside cmd_expire — capturing
     # datetime.now() here freezes the value at parser-build-time
     # (bug #6 in the fourth-pass review).
-    expire.add_argument("--at", type=parse_datetime, default=None)
+    expire.add_argument(
+        "--at",
+        type=parse_datetime,
+        default=None,
+        help="ISO 8601 timestamp to expire the link at; defaults to now",
+    )
     expire.set_defaults(func=cmd_expire)
 
     raw = sub.add_parser("serve-raw", help="run the raw socket redirect server")
-    raw.add_argument("--host", default="127.0.0.1")
-    raw.add_argument("--port", type=int, default=9000)
+    raw.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="host interface for the raw socket redirect server",
+    )
+    raw.add_argument(
+        "--port",
+        type=int,
+        default=9000,
+        help="TCP port for the raw socket redirect server",
+    )
     raw.set_defaults(func=cmd_serve_raw)
 
     wsgi = sub.add_parser("serve-wsgi", help="run the hand-written WSGI app")
-    wsgi.add_argument("--host", default="127.0.0.1")
-    wsgi.add_argument("--port", type=int, default=9100)
+    wsgi.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="host interface for the hand-written WSGI demo server",
+    )
+    wsgi.add_argument(
+        "--port",
+        type=int,
+        default=9100,
+        help="TCP port for the hand-written WSGI demo server",
+    )
     wsgi.set_defaults(func=cmd_serve_wsgi)
 
     health = sub.add_parser("check-health", help="check stored destination URLs concurrently")
-    health.add_argument("--concurrency", type=int, default=10)
-    health.add_argument("--timeout", type=float, default=5.0)
-    health.add_argument("--allow-private", action="store_true")
+    health.add_argument(
+        "--concurrency",
+        type=int,
+        default=10,
+        help="maximum number of destination URLs to check concurrently",
+    )
+    health.add_argument(
+        "--timeout",
+        type=float,
+        default=5.0,
+        help="per-link health-check timeout in seconds",
+    )
+    health.add_argument(
+        "--allow-private",
+        action="store_true",
+        help="allow health checks against private, loopback, and link-local hosts",
+    )
     health.set_defaults(func=cmd_check_health)
     return parser
 
