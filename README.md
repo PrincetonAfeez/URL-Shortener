@@ -74,6 +74,43 @@ python web/manage.py runserver 127.0.0.1:8000
 
 Open `http://127.0.0.1:8000/`.
 
+## Container smoke run
+
+This container is a **repeatable local/demo runtime**, not a production
+deployment. It uses Django's development `runserver` (same caveats as above)
+and a fresh SQLite file inside the container on each run unless you mount a
+volume at the database path.
+
+```powershell
+docker build -t sniplink .
+docker run --rm -p 8000:8000 `
+  -e SNIPLINK_DJANGO_DEBUG=false `
+  -e SNIPLINK_SECRET_KEY=change-me `
+  -e SNIPLINK_API_KEY=demo-key `
+  sniplink
+```
+
+The image runs `migrate` before `runserver` so the dashboard is usable on first
+boot. Then open `http://127.0.0.1:8000/`.
+
+CI runs `docker build` and a lightweight HTTP smoke check on every push/PR
+(`.github/workflows/ci.yml`, job `docker-smoke`).
+
+For a persistent database across container restarts, mount the configured path
+(from `sniplink.toml`, default `sniplink.db`):
+
+```powershell
+docker run --rm -p 8000:8000 `
+  -v "${PWD}/data:/app/data" `
+  -e SNIPLINK_DB=/app/data/sniplink.db `
+  -e SNIPLINK_DJANGO_DEBUG=false `
+  -e SNIPLINK_SECRET_KEY=change-me `
+  sniplink
+```
+
+See `docs/production-reflection.md` for what would change in a real deployment
+(Gunicorn/uvicorn, Postgres, TLS termination, rate limits, and so on).
+
 The Django app uses a `DjangoStorage` adapter that implements the same storage
 contract as the SQLite CLI/raw server path. The core service does not import
 Django. Both adapters read and write the **same tables** (`links`, `clicks`,
@@ -289,7 +326,7 @@ secret-shaped header values out of logs.
 - [Submission checklist](docs/submission-checklist.md)
 - [Protocol evidence](docs/protocol-evidence.md)
 - [Demo script](docs/demo-script.md)
-- [Production reflection](docs/production-reflection.md)
+- [Production reflection](docs/production-reflection.md) (includes container vs production notes)
 - [Milestone timeline](docs/planning/timeline.md)
 - Architecture decision records live in [docs/adr](docs/adr).
 

@@ -106,15 +106,35 @@ def build_parser() -> argparse.ArgumentParser:
 
     create = sub.add_parser("create", help="create a short link")
     create.add_argument("url")
-    create.add_argument("--alias")
+    create.add_argument(
+        "--alias",
+        help="custom vanity short code to use instead of an auto-generated code",
+    )
     create.add_argument("--random", action="store_true", help="use random token codec")
     # Default left as None so the service uses
     # sniplink.toml#default_redirect_status. Passing 302 here would shadow
     # the config knob — see bug #4 in the third-pass review.
-    create.add_argument("--redirect-status", type=int, default=None)
-    create.add_argument("--expires-at", type=parse_datetime)
-    create.add_argument("--max-clicks", type=int)
-    create.add_argument("--json", action="store_true")
+    create.add_argument(
+        "--redirect-status",
+        type=int,
+        default=None,
+        help="HTTP redirect status to use: 301, 302, 307, or 308; defaults to config",
+    )
+    create.add_argument(
+        "--expires-at",
+        type=parse_datetime,
+        help="ISO 8601 expiration timestamp; naive values are treated as UTC",
+    )
+    create.add_argument(
+        "--max-clicks",
+        type=int,
+        help="maximum number of redirect clicks before the link returns 410 Gone",
+    )
+    create.add_argument(
+        "--json",
+        action="store_true",
+        help="print the created link as JSON instead of a human-readable line",
+    )
     _add_base_url_arg(create)
     create.set_defaults(func=cmd_create)
 

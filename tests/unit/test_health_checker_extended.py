@@ -17,6 +17,36 @@ def test_health_checker_rejects_non_positive_concurrency():
         AsyncHealthChecker(concurrency=0)
 
 
+async def test_check_links_propagates_caller_cancellation(monkeypatch):
+    checker = AsyncHealthChecker(concurrency=1, timeout=5)
+
+    link = Link(
+        id=1,
+        short_code="demo",
+        destination_url="https://example.com/",
+        redirect_status=302,
+        created_at=utc_now(),
+        expires_at=None,
+        disabled_at=None,
+        deleted_at=None,
+        max_clicks=None,
+        click_count=0,
+        metadata={},
+    )
+
+    async def never_finishes(_link):
+        await asyncio.sleep(60)
+
+    monkeypatch.setattr(checker, "check_link", never_finishes)
+
+    task = asyncio.create_task(checker.check_links([link]))
+    await asyncio.sleep(0)
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+
 def test_health_checker_rejects_non_http_scheme():
     checker = AsyncHealthChecker(allow_private=True)
     link = Link(1, "x", "ftp://example.com", 302, utc_now())

@@ -19,6 +19,14 @@ Safety
 The checker refuses private, loopback, and link-local destinations by
 default. Pass ``allow_private=True`` (or the CLI ``--allow-private`` flag)
 when running against a test server on ``127.0.0.1`` during the demo.
+
+Cancellation
+------------
+``check_links()`` does not swallow ``asyncio.CancelledError``. If the caller
+cancels the batch, cancellation propagates to the caller. Individual socket
+writers are closed in ``finally`` blocks so partially completed checks do not
+intentionally leak open connections. Per-link timeouts are reported as error
+results; caller cancellation is not converted into a health-check row.
 """
 
 from __future__ import annotations

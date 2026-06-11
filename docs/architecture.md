@@ -91,6 +91,15 @@ These are documented stretch goals (see `docs/planning/timeline.md`), not bugs:
 | `POST …/disable` | `410 Gone` (strict) |
 | `DELETE …/links/{code}` | `204 No Content` (idempotent) |
 
+## Async health checker
+
+Concurrent HEAD probes use a semaphore (`concurrency`) and per-link
+``asyncio.wait_for`` timeouts. Timing scope, private-host safety, and
+**cancellation** semantics are documented in
+``src/sniplink/async_tools/health_checker.py``: caller cancellation
+propagates (it is not turned into a health-check row); per-link timeouts
+become error results; socket writers are closed in ``finally`` blocks.
+
 ## Further reading
 
 - [Defense FAQ](defense-faq.md)

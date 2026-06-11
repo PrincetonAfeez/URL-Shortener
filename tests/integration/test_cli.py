@@ -31,6 +31,30 @@ def test_init_db_prints_django_fake_initial_hint(tmp_path):
     assert "migrate --fake-initial" in result.stdout
 
 
+def test_create_help_documents_flags():
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(["src", "web", env.get("PYTHONPATH", "")])
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "sniplink",
+            "create",
+            "--help",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert "custom vanity short code" in result.stdout
+    assert "HTTP redirect status" in result.stdout
+    assert "ISO 8601 expiration timestamp" in result.stdout
+    assert "maximum number of redirect clicks" in result.stdout
+    assert "print the created link as JSON" in result.stdout
+
+
 def test_cli_create_resolve_list_delete(tmp_path):
     created = run_cli(tmp_path, "create", "https://example.com", "--alias", "demo")
     assert "demo -> https://example.com/" in created.stdout
