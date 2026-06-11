@@ -1,0 +1,35 @@
+erDiagram
+    links ||--o{ clicks : records
+    links ||--o{ health_check_results : checks
+
+    links {
+        INTEGER id PK
+        TEXT short_code UK
+        TEXT destination_url
+        INTEGER redirect_status
+        TEXT created_at
+        TEXT expires_at
+        TEXT disabled_at
+        TEXT deleted_at
+        INTEGER max_clicks
+        INTEGER click_count
+        TEXT metadata
+    }
+
+    clicks {
+        INTEGER id PK
+        INTEGER link_id FK
+        TEXT clicked_at
+        TEXT referrer
+        TEXT user_agent
+    }
+
+    health_check_results {
+        INTEGER id PK
+        INTEGER link_id FK
+        TEXT checked_at
+        INTEGER status_code
+        TEXT error
+        REAL elapsed_ms
+        INTEGER redirect_count
+    }
